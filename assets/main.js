@@ -2,24 +2,34 @@
 (function () {
   const menuBtn   = document.getElementById('menuBtn');
   const infoPanel = document.getElementById('infoPanel');
-  const infoClose = document.getElementById('infoClose');
   const root = document.documentElement;
 
   function openPanel() {
+    // 1) сначала "углубляем" слово и меняем бургер → крест
+    root.classList.add('panel-open');
     menuBtn.classList.add('is-open');
     menuBtn.setAttribute('aria-expanded', 'true');
+
+    // 2) задаём небольшую задержку для панели (мягкое стадирование)
+    root.style.setProperty('--panel-delay', '.12s');
+
+    // 3) показываем панель
     infoPanel.setAttribute('aria-hidden', 'false');
-    root.classList.add('panel-open');
-    // блокируем прокрутку фона на iOS
+
+    // 4) блокируем фон
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
   }
 
   function closePanel() {
+    // без задержки на закрытие
+    root.style.setProperty('--panel-delay', '0s');
+
     menuBtn.classList.remove('is-open');
     menuBtn.setAttribute('aria-expanded', 'false');
     infoPanel.setAttribute('aria-hidden', 'true');
     root.classList.remove('panel-open');
+
     document.documentElement.style.overflow = '';
     document.body.style.overflow = '';
   }
@@ -30,8 +40,6 @@
   }
 
   menuBtn.addEventListener('click', togglePanel);
-  if (infoClose) infoClose.addEventListener('click', closePanel);
-
   // Закрытие по Esc
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closePanel();
