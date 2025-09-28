@@ -45,7 +45,8 @@
 
     nodes.forEach((el, index) => {
       el.classList.add('line');
-      el.style.setProperty('--delay', `${160 + index * 95}ms`);
+      el.style.setProperty('--delay-open', `${160 + index * 95}ms`);
+      el.style.setProperty('--delay-close', `${index * 95}ms`);
     });
   }
 
@@ -62,7 +63,7 @@
     const needed = infoFit.scrollHeight;
     let scale = 1;
     if (needed > available && available > 0){
-      scale = Math.max(0.6, available / needed);
+      scale = Math.max(0.5, available / needed);
     }
 
     root.style.setProperty('--panel-scale', `${scale}`);
@@ -102,6 +103,7 @@
 
     showTimer = window.setTimeout(() => {
       prepareLines();
+      infoPanel.classList.add('is-active');
       infoPanel.setAttribute('aria-hidden','false');
       requestAnimationFrame(() => {
         fitInfo();
@@ -135,11 +137,26 @@
     root.classList.add('panel-closing');
     root.classList.remove('panel-open');
 
-    infoPanel.setAttribute('aria-hidden','true');
+    if (!infoPanel.classList.contains('is-active')) {
+      infoPanel.classList.add('is-active');
+    }
     menuBtn.classList.remove('is-open');
     menuBtn.setAttribute('aria-expanded','false');
 
+    const lineNodes = Array.from(infoCont.querySelectorAll('.line'));
+    const longestDelay = lineNodes.reduce((max, el) => {
+      const value = el.style.getPropertyValue('--delay-close');
+      const delay = parseTimeValue(value);
+      return Math.max(max, delay);
+    }, 0);
+    const lineFallDuration = 900;
+    const totalLineTime = longestDelay + lineFallDuration;
+    const settleTime = Math.max(panelDuration, totalLineTime);
+
     closeTimer = window.setTimeout(() => {
+      infoPanel.setAttribute('aria-hidden','true');
+      infoPanel.classList.remove('is-active');
+
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
 
@@ -147,7 +164,7 @@
 
       if (window.__unfreezeSafeAreas) window.__unfreezeSafeAreas();
       closeTimer = null;
-    }, panelDelay + panelDuration);
+    }, settleTime);
   }
 
   function togglePanel(){
@@ -186,6 +203,7 @@
     }, { passive: true });
   }
 
+  infoPanel.classList.remove('is-active');
   infoPanel.setAttribute('aria-hidden','true');
   if (menuBtn){
     menuBtn.setAttribute('aria-expanded','false');

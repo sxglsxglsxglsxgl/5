@@ -20,6 +20,7 @@
   /* управляемая длительность и задержка панели */
   --panel-duration: 1.6s;
   --panel-delay: .12s;
+  --panel-delay-active: 0s;
 
   /* высота видимой области, зададим из JS точно */
   --vh-usable: 100svh;
@@ -108,6 +109,13 @@ body{
 .menu-btn.is-open .middle{ opacity:0; }
 .menu-btn.is-open .bottom{ transform: translateY(0) rotate(-45deg); }
 
+:root.panel-opening{
+  --panel-delay-active: var(--panel-delay);
+}
+:root.panel-closing{
+  --panel-delay-active: 0s;
+}
+
 .info-panel{
   position:fixed; inset:0;
   background:var(--bg); color:var(--fg);
@@ -123,13 +131,19 @@ body{
   opacity:0; transform: translateY(8%);
   visibility:hidden;
   transition:
-    opacity var(--panel-duration) cubic-bezier(.16,1,.3,1) var(--panel-delay),
-    transform var(--panel-duration) cubic-bezier(.16,1,.3,1) var(--panel-delay),
-    visibility 0s linear var(--panel-duration);
+    opacity var(--panel-duration) cubic-bezier(.16,1,.3,1) var(--panel-delay-active),
+    transform var(--panel-duration) cubic-bezier(.16,1,.3,1) var(--panel-delay-active);
 }
-.info-panel[aria-hidden="false"]{
+.info-panel.is-active{
   opacity:1; transform: translateY(0);
-  visibility:visible; transition-delay: var(--panel-delay), var(--panel-delay), 0s;
+  visibility:visible;
+}
+.panel-closing .info-panel.is-active{
+  opacity:0;
+  transform: translateY(8%);
+}
+.panel-closing .info-panel{
+  pointer-events:none;
 }
 
 .info-fit{
@@ -162,19 +176,26 @@ body{
 @keyframes line-rise { from {opacity:0; transform: translateY(14px);} to {opacity:1; transform: translateY(0);} }
 @keyframes line-fall { from {opacity:1; transform: translateY(0);}     to {opacity:0; transform: translateY(14px);} }
 
-.info-panel[aria-hidden="false"] .line{
+.info-panel.is-active .line{
   opacity:0;
   animation: line-rise 1.1s cubic-bezier(.16,1,.3,1) forwards;
-  animation-delay: var(--delay, 0ms);
+  animation-delay: var(--delay-open, 0ms);
 }
 
 .panel-closing .line{
   animation: line-fall 900ms cubic-bezier(.16,1,.3,1) forwards;
-  animation-delay: var(--delay, 0ms);
+  animation-delay: var(--delay-close, 0ms);
 }
 
 @media (max-width:380px){
   .wordmark{ font-size: clamp(26px, 9.2vw, 70px); }
+}
+
+@media (max-width:480px){
+  .info-content{ line-height:1.22; }
+  .info-content .lead{ font-size: clamp(22px, 7.4vw, 34px); margin-bottom: 22px; }
+  .info-content .roles{ font-size: clamp(18px, 6.2vw, 24px); gap: 8px; margin-bottom: 26px; }
+  .info-content .founders{ font-size: clamp(16px, 5.8vw, 22px); }
 }
 
 @media (prefers-reduced-motion: reduce){
