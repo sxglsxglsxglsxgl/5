@@ -1,8 +1,25 @@
 // assets/main.js
 (function () {
-  const menuBtn = document.getElementById('menuBtn');
+  const menuBtn   = document.getElementById('menuBtn');
   const infoPanel = document.getElementById('infoPanel');
   const root = document.documentElement;
+
+  function prepareLines() {
+    const nodes = [];
+    const lead = infoPanel.querySelector('.lead');
+    if (lead) nodes.push(lead);
+
+    const roles = infoPanel.querySelectorAll('.roles span');
+    roles.forEach((node) => nodes.push(node));
+
+    const founders = infoPanel.querySelector('.founders');
+    if (founders) nodes.push(founders);
+
+    nodes.forEach((el, index) => {
+      el.classList.add('line');
+      el.style.setProperty('--delay', `${160 + index * 95}ms`);
+    });
+  }
 
   function openPanel() {
     if (window.__freezeSafeAreas) window.__freezeSafeAreas();
@@ -11,17 +28,16 @@
     menuBtn.classList.add('is-open');
     menuBtn.setAttribute('aria-expanded', 'true');
 
-    root.style.setProperty('--panel-delay', '.12s');
-
-    infoPanel.setAttribute('aria-hidden', 'false');
+    setTimeout(() => {
+      prepareLines();
+      infoPanel.setAttribute('aria-hidden', 'false');
+    }, 120);
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
   }
 
   function closePanel() {
-    root.style.setProperty('--panel-delay', '0s');
-
     infoPanel.setAttribute('aria-hidden', 'true');
     root.classList.remove('panel-open');
 
@@ -37,8 +53,7 @@
   }
 
   function togglePanel() {
-    const expanded = menuBtn.getAttribute('aria-expanded') === 'true';
-    expanded ? closePanel() : openPanel();
+    menuBtn.getAttribute('aria-expanded') === 'true' ? closePanel() : openPanel();
   }
 
   menuBtn.addEventListener('click', togglePanel);
