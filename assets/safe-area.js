@@ -2,45 +2,67 @@
 (function () {
   const docEl = document.documentElement;
 
+  function readNumberVar(name) {
+    const value = getComputedStyle(docEl).getPropertyValue(name).trim();
+    const parsed = parseFloat(value);
+    return Number.isNaN(parsed) ? 0 : parsed;
+  }
+
   function updateSafeAreaVars() {
-    // Базовые env() — как дефолт
-    const envTop = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-top')) || 0;
-    const envRight = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-right')) || 0;
-    const envBottom = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-bottom')) || 0;
-    const envLeft = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-left')) || 0;
-
-    let top = envTop, right = envRight, bottom = envBottom, left = envLeft;
-
-    // Доп. вычисления через visualViewport (когда доступно)
     const vv = window.visualViewport;
-    if (vv) {
-      // Верхний/нижний гэпы из-за браузерного chrome
-      const vhGap = window.innerHeight - Math.round(vv.height);
-      // Предположительно: верхний инсет = offsetTop
-      top = Math.max(top, Math.round(vv.offsetTop));
-      // Нижний — остаток
-      bottom = Math.max(bottom, Math.max(0, Math.round(vhGap - vv.offsetTop)));
+    let top = readNumberVar('--safe-top');
+    let right = readNumberVar('--safe-right');
+    let bottom = readNumberVar('--safe-bottom');
+    let left = readNumberVar('--safe-left');
 
-      // Горизонтальные инкрусты
-      left = Math.max(left, Math.round(vv.offsetLeft));
-      right = Math.max(right, Math.max(0, Math.round((window.innerWidth - Math.round(vv.width)) - vv.offsetLeft)));
+    if (vv) {
+      const viewportWidth = Math.round(vv.width);
+      const windowWidth = window.innerWidth;
+      const viewportHeight = Math.round(vv.height);
+      const windowHeight = window.innerHeight;
+      const offsetTop = Math.round(vv.offsetTop);
+      const offsetLeft = Math.round(vv.offsetLeft);
+      const verticalGap = Math.max(0, windowHeight - viewportHeight);
+
+      top = Math.max(top, offsetTop);
+      left = Math.max(left, offsetLeft);
+      right = Math.max(right, Math.max(0, (windowWidth - viewportWidth) - offsetLeft));
+      bottom = Math.max(bottom, Math.max(0, verticalGap - offsetTop));
     }
 
-    docEl.style.setProperty('--safe-top', `${top}px`);
-    docEl.style.setProperty('--safe-right', `${right}px`);
-    docEl.style.setProperty('--safe-bottom', `${bottom}px`);
-    docEl.style.setProperty('--safe-left', `${left}px`);
+    if (!docEl.classList.contains('panel-open')) {
+      docEl.style.setProperty('--safe-top-active', `${top}px`);
+      docEl.style.setProperty('--safe-right-active', `${right}px`);
+      docEl.style.setProperty('--safe-bottom-active', `${bottom}px`);
+      docEl.style.setProperty('--safe-left-active', `${left}px`);
+    }
   }
 
-  ['resize', 'scroll', 'orientationchange'].forEach(evt =>
-    window.addEventListener(evt, updateSafeAreaVars, { passive: true })
-  );
+  ['resize', 'scroll', 'orientationchange'].forEach((eventName) => {
+    window.addEventListener(eventName, updateSafeAreaVars, { passive: true });
+  });
+
   if (window.visualViewport) {
-    ['resize', 'scroll'].forEach(evt =>
-      window.visualViewport.addEventListener(evt, updateSafeAreaVars, { passive: true })
-    );
+    ['resize', 'scroll'].forEach((eventName) => {
+      window.visualViewport.addEventListener(eventName, updateSafeAreaVars, { passive: true });
+    });
   }
 
-  // Первичная инициализация
+  window.__freezeSafeAreas = function freeze() {
+    const top = readNumberVar('--safe-top-active');
+    const right = readNumberVar('--safe-right-active');
+    const bottom = readNumberVar('--safe-bottom-active');
+    const left = readNumberVar('--safe-left-active');
+
+    docEl.style.setProperty('--safe-top-active', `${top}px`);
+    docEl.style.setProperty('--safe-right-active', `${right}px`);
+    docEl.style.setProperty('--safe-bottom-active', `${bottom}px`);
+    docEl.style.setProperty('--safe-left-active', `${left}px`);
+  };
+
+  window.__unfreezeSafeAreas = function unfreeze() {
+    updateSafeAreaVars();
+  };
+
   updateSafeAreaVars();
 })();
