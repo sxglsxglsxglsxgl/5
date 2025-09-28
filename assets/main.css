@@ -1,0 +1,128 @@
+:root {
+  /* Будут переопределяться из safe-area.js */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  --bg: #0A0A0A;
+  --fg: #FAFAFA;
+  --fg-weak: #C8C8C8;
+
+  --maxw: 1200px;
+  --padX: clamp(16px, 2.5vw, 40px);
+  --padY: clamp(16px, 2.5vh, 40px);
+
+  --font-sans: ui-sans-serif, -apple-system, "SF Pro Text", "Segoe UI", Roboto, Arial, "Helvetica Neue", Helvetica, system-ui, sans-serif;
+  --lh: 1.1;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+
+html { background: var(--bg); color: var(--fg); }
+body {
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
+  line-height: 1.4;
+}
+
+.app {
+  min-height: 100svh; /* корректнее, чем 100vh на iOS */
+  padding:
+    calc(var(--padY) + var(--safe-top))
+    calc(var(--padX) + var(--safe-right))
+    calc(var(--padY) + var(--safe-bottom))
+    calc(var(--padX) + var(--safe-left));
+  display: grid;
+  place-items: center;
+  position: relative;
+}
+
+/* Центрированный слово-знак (без анимаций) */
+.wordmark {
+  margin: 0;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: var(--lh);
+  /* Оптическая шкала размера под вьюпорт */
+  font-size: clamp(28px, 11vw, 96px);
+}
+
+/* Кнопка "i" — правый верх, внутри safe-area */
+.info-btn {
+  position: fixed;
+  top: calc(16px + var(--safe-top));
+  right: calc(16px + var(--safe-right));
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  color: var(--fg);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.info-btn:hover { opacity: 1; transform: scale(1.03); }
+.info-btn:focus-visible { outline: 2px solid var(--fg-weak); outline-offset: 3px; }
+
+/* Инфо-панель (диалог) */
+.info-panel {
+  position: fixed;
+  inset: auto 0 0 0; /* снизу экрана */
+  padding:
+    0
+    calc(var(--padX) + var(--safe-right))
+    calc(var(--padY) + var(--safe-bottom))
+    calc(var(--padX) + var(--safe-left));
+  background: color-mix(in srgb, var(--bg) 94%, black 6%);
+  border-top: 1px solid rgba(255,255,255,.08);
+  max-height: 70svh;
+  transform: translateY(100%);
+  transition: transform .45s cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+  overflow: auto;
+}
+.info-panel[aria-hidden="false"] {
+  transform: translateY(0);
+}
+.info-content {
+  margin: 24px auto 0;
+  max-width: min(800px, calc(100% - var(--safe-left) - var(--safe-right)));
+  color: var(--fg);
+}
+.info-content p { margin: 0 0 16px 0; }
+
+.lead {
+  font-size: clamp(16px, 2.4vw, 28px);
+  line-height: 1.25;
+}
+.roles {
+  display: grid;
+  gap: 6px;
+  font-size: clamp(14px, 1.8vw, 20px);
+  color: var(--fg-weak);
+}
+.founders {
+  margin-top: 20px;
+  font-size: clamp(14px, 1.8vw, 20px);
+}
+.founders a {
+  color: var(--fg);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,255,255,.25);
+}
+.founders a:hover {
+  border-bottom-color: rgba(255,255,255,.6);
+}
+
+/* Уважение к reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .info-panel { transition: none; }
+  .info-btn { transition: none; }
+}

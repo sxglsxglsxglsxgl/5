@@ -1,1 +1,57 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <title>CLASSNOE MESTO,</title>
+  <meta name="description" content="Classnoe Mesto is a creative collective.">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#0A0A0A">
 
+  <link rel="preload" href="./assets/main.css" as="style">
+  <link rel="stylesheet" href="./assets/main.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <!-- Центральный слово-знак (без анимаций) -->
+    <h1 class="wordmark" aria-label="CLASSNOE MESTO,">
+      <span aria-hidden="true">CLASSNOE&nbsp;MESTO,</span>
+    </h1>
+
+    <!-- Кнопка информации (правый верх) -->
+    <button id="infoBtn" class="info-btn" aria-expanded="false" aria-controls="infoPanel" aria-label="Open information panel">
+      <svg viewBox="-50 -50 100 100" width="36" height="36" aria-hidden="true" focusable="false">
+        <circle cx="0" cy="0" r="5" stroke="currentColor" fill="none" stroke-width="3.2"></circle>
+        <line x1="0" y1="-10" x2="0" y2="8" stroke="currentColor" stroke-width="4.6" stroke-linecap="round"></line>
+        <circle cx="0" cy="15" r="2.4" fill="currentColor"></circle>
+      </svg>
+    </button>
+
+    <!-- Инфо-панель (как у LoveFrom: текст, список ролей, «Founded by…») -->
+    <aside id="infoPanel" class="info-panel" role="dialog" aria-modal="false" aria-hidden="true">
+      <div class="info-content">
+        <p class="lead">Classnoe Mesto is a <span class="vcut">creative collective.</span></p>
+        <p class="roles">
+          <span>architects</span>
+          <span>artists</span>
+          <span>engineers</span>
+          <span>filmmakers</span>
+          <span>graphic designers</span>
+          <span>industrial designers</span>
+          <span>interaction designers</span>
+          <span>motion designers</span>
+          <span>musicians</span>
+          <span>sound designers</span>
+          <span>type designers</span>
+          <span>writers</span>
+        </p>
+        <p class="founders">
+          Founded by <a href="#" rel="nofollow">Sasha</a> with Friends.
+        </p>
+      </div>
+    </aside>
+  </div>
+
+  <script src="./assets/safe-area.js"></script>
+  <script src="./assets/main.js" defer></script>
+</body>
+</html>
