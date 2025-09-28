@@ -180,17 +180,29 @@ body{
   font-size: clamp(18px, 5vw, 26px);
 }
 
-@keyframes line-rise { from {opacity:0; transform: translateY(14px);} to {opacity:1; transform: translateY(0);} }
-@keyframes line-fall { from {opacity:1; transform: translateY(0);}     to {opacity:0; transform: translateY(14px);} }
+@keyframes line-open {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-.info-panel.is-active .line{
-  opacity:0;
-  animation: line-rise var(--line-open-duration) cubic-bezier(.16,1,.3,1) forwards;
+@keyframes line-close {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-14px); }
+}
+
+.line {
+  will-change: opacity, transform;
+}
+
+.panel-opening .line {
+  opacity: 0;
+  animation: line-open 1100ms cubic-bezier(.16,1,.3,1) forwards;
   animation-delay: var(--delay-open, 0ms);
 }
 
-.panel-closing .line{
-  animation: line-fall var(--line-close-duration) cubic-bezier(.16,1,.3,1) forwards;
+.panel-closing .line {
+  opacity: 1;
+  animation: line-close 900ms cubic-bezier(.16,1,.3,1) forwards;
   animation-delay: var(--delay-close, 0ms);
 }
 
