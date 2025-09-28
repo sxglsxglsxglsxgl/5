@@ -71,55 +71,96 @@ body {
 .info-btn:hover { opacity: 1; transform: scale(1.03); }
 .info-btn:focus-visible { outline: 2px solid var(--fg-weak); outline-offset: 3px; }
 
-/* Инфо-панель (диалог) */
+/* ПОЛНОЭКРАННАЯ СВЕТЛАЯ ПАНЕЛЬ */
 .info-panel {
   position: fixed;
-  inset: auto 0 0 0; /* снизу экрана */
+  inset: 0;
+  background: #FAFAFA;
+  color: #111;
+  display: grid;
+  place-items: center;
+  /* плавное появление */
+  opacity: 0;
+  transform: translateY(2%);
+  visibility: hidden;
+  transition:
+    opacity .35s cubic-bezier(.2,.8,.2,1),
+    transform .35s cubic-bezier(.2,.8,.2,1),
+    visibility 0s linear .35s; /* скрыть клики, когда невидима */
+  /* учёт safe-areas через внутренние паддинги контейнера */
   padding:
-    0
-    calc(var(--padX) + var(--safe-right))
-    calc(var(--padY) + var(--safe-bottom))
-    calc(var(--padX) + var(--safe-left));
-  background: color-mix(in srgb, var(--bg) 94%, black 6%);
-  border-top: 1px solid rgba(255,255,255,.08);
-  max-height: 70svh;
-  transform: translateY(100%);
-  transition: transform .45s cubic-bezier(.2,.8,.2,1);
-  will-change: transform;
+    calc(max(var(--padY), 24px) + var(--safe-top))
+    calc(max(var(--padX), 24px) + var(--safe-right))
+    calc(max(var(--padY), 24px) + var(--safe-bottom))
+    calc(max(var(--padX), 24px) + var(--safe-left));
   overflow: auto;
 }
-.info-panel[aria-hidden="false"] {
-  transform: translateY(0);
-}
-.info-content {
-  margin: 24px auto 0;
-  max-width: min(800px, calc(100% - var(--safe-left) - var(--safe-right)));
-  color: var(--fg);
-}
-.info-content p { margin: 0 0 16px 0; }
 
-.lead {
-  font-size: clamp(16px, 2.4vw, 28px);
+.info-panel[aria-hidden="false"] {
+  opacity: 1;
+  transform: translateY(0);
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Контент по центру, узкая колонка */
+.info-content {
+  width: min(640px, 100%);
+  margin: 0 auto;
+  text-align: center;
+  font-family: ui-serif, "Georgia", "Times New Roman", Times, serif;
   line-height: 1.25;
 }
-.roles {
+
+/* Заголовок (первый абзац) — крупный serif */
+.info-content .lead {
+  font-size: clamp(24px, 4.6vw, 42px);
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  margin: 0 0 28px 0;
+}
+
+/* Список ролей — одна колонка, по центру, равномерный ритм */
+.info-content .roles {
   display: grid;
-  gap: 6px;
-  font-size: clamp(14px, 1.8vw, 20px);
-  color: var(--fg-weak);
+  justify-items: center;
+  gap: 10px;
+  margin: 0 0 32px 0;
+  font-size: clamp(18px, 3.2vw, 30px);
+  line-height: 1.25;
+  color: #111;
 }
-.founders {
-  margin-top: 20px;
-  font-size: clamp(14px, 1.8vw, 20px);
+
+/* Фаундеры — с лёгким курсивом для имени */
+.info-content .founders {
+  font-size: clamp(18px, 2.6vw, 26px);
+  margin: 10px 0 0 0;
 }
-.founders a {
-  color: var(--fg);
-  text-decoration: none;
-  border-bottom: 1px solid rgba(255,255,255,.25);
+.info-content .founders em,
+.info-content .founders i {
+  font-style: italic;
 }
-.founders a:hover {
-  border-bottom-color: rgba(255,255,255,.6);
+
+/* КНОПКА ЗАКРЫТИЯ (× в кружке) — правый верх, внутри safe-area */
+.info-close {
+  position: fixed;
+  top: calc(16px + var(--safe-top));
+  right: calc(16px + var(--safe-right));
+  width: 36px;
+  height: 36px;
+  line-height: 36px;
+  border-radius: 999px;
+  background: transparent;
+  color: #111;
+  border: 2px solid #111;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  font-size: 24px;
+  padding: 0;
 }
+.info-close:hover { opacity: .85; }
+.info-close:focus-visible { outline: 2px solid #666; outline-offset: 3px; }
 
 /* Уважение к reduced motion */
 @media (prefers-reduced-motion: reduce) {

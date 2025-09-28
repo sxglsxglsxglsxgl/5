@@ -2,15 +2,21 @@
 (function () {
   const infoBtn = document.getElementById('infoBtn');
   const infoPanel = document.getElementById('infoPanel');
+  const infoClose = document.getElementById('infoClose');
 
   function openPanel() {
     infoBtn.setAttribute('aria-expanded', 'true');
     infoPanel.setAttribute('aria-hidden', 'false');
+    // блокируем прокрутку фона на iOS
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
   }
 
   function closePanel() {
     infoBtn.setAttribute('aria-expanded', 'false');
     infoPanel.setAttribute('aria-hidden', 'true');
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
   }
 
   function togglePanel() {
@@ -19,18 +25,21 @@
   }
 
   infoBtn.addEventListener('click', togglePanel);
+  infoClose.addEventListener('click', closePanel);
 
-  // Закрытие по Escape
+  // Закрытие по Esc
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closePanel();
   });
 
-  // Клик вне содержимого панели (если открыта)
+  // Клик по фону (вне контента) — закрыть
   infoPanel.addEventListener('click', (e) => {
-    // Закрываем, если кликнули по фону панели, а не по контенту
-    if (e.target === infoPanel) closePanel();
+    const content = e.currentTarget.querySelector('.info-content');
+    if (e.target === e.currentTarget || !content.contains(e.target)) {
+      closePanel();
+    }
   });
 
-  // Стартовое состояние — панель скрыта
+  // Старт: панель скрыта
   closePanel();
 })();
