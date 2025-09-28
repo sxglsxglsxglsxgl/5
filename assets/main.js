@@ -33,7 +33,11 @@
 
   updatePanelTiming();
 
-  function prepareLines(){
+  let lineCache = null;
+
+  function getLineNodes(){
+    if (lineCache) return lineCache;
+
     const nodes = [];
     const lead = infoCont.querySelector('.lead');
     if (lead) nodes.push(lead);
@@ -43,10 +47,31 @@
     const founders = infoCont.querySelector('.founders');
     if (founders) nodes.push(founders);
 
+    lineCache = nodes;
+    return lineCache;
+  }
+
+  function prepareLines(){
+    const nodes = getLineNodes();
+
     nodes.forEach((el, index) => {
-      el.classList.add('line');
+      if (!el.classList.contains('line')){
+        el.classList.add('line');
+      }
       el.style.setProperty('--delay-open', `${160 + index * 95}ms`);
       el.style.setProperty('--delay-close', `${index * 95}ms`);
+    });
+  }
+
+  function scrubLineAnimations(){
+    const nodes = getLineNodes();
+    nodes.forEach((el) => {
+      el.style.animation = 'none';
+    });
+    // Force reflow so the browser registers the reset before we remove the override.
+    void infoCont.offsetHeight;
+    nodes.forEach((el) => {
+      el.style.removeProperty('animation');
     });
   }
 
@@ -103,6 +128,7 @@
 
     showTimer = window.setTimeout(() => {
       prepareLines();
+      scrubLineAnimations();
       infoPanel.classList.add('is-active');
       infoPanel.setAttribute('aria-hidden','false');
       requestAnimationFrame(() => {
@@ -134,6 +160,7 @@
     }
 
     root.classList.remove('panel-opening');
+    scrubLineAnimations();
     root.classList.add('panel-closing');
     root.classList.remove('panel-open');
 
