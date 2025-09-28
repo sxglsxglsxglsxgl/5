@@ -9,6 +9,29 @@
   let showTimer = null;
   let finalizeTimer = null;
   let closeTimer = null;
+  let panelDelay = 120;
+  let panelDuration = 1600;
+
+  function parseTimeValue(value){
+    if (!value) return 0;
+    const trimmed = `${value}`.trim();
+    if (!trimmed) return 0;
+    if (trimmed.endsWith('ms')) return parseFloat(trimmed);
+    if (trimmed.endsWith('s')) return parseFloat(trimmed) * 1000;
+    const numeric = parseFloat(trimmed);
+    return Number.isNaN(numeric) ? 0 : numeric;
+  }
+
+  function updatePanelTiming(){
+    const styles = getComputedStyle(root);
+    const delayValue = parseTimeValue(styles.getPropertyValue('--panel-delay'));
+    const durationValue = parseTimeValue(styles.getPropertyValue('--panel-duration'));
+
+    panelDelay = delayValue || panelDelay;
+    panelDuration = durationValue || panelDuration;
+  }
+
+  updatePanelTiming();
 
   function prepareLines(){
     const nodes = [];
@@ -39,7 +62,7 @@
     const needed = infoFit.scrollHeight;
     let scale = 1;
     if (needed > available && available > 0){
-      scale = Math.max(0.75, available / needed);
+      scale = Math.max(0.6, available / needed);
     }
 
     root.style.setProperty('--panel-scale', `${scale}`);
@@ -68,6 +91,7 @@
     if (!menuBtn || menuBtn.getAttribute('aria-expanded') === 'true') return;
 
     clearCloseTimer();
+    updatePanelTiming();
 
     if (window.__freezeSafeAreas) window.__freezeSafeAreas();
 
@@ -82,7 +106,7 @@
       requestAnimationFrame(() => {
         fitInfo();
       });
-    }, 120);
+    }, panelDelay);
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
@@ -91,7 +115,7 @@
       root.classList.remove('panel-opening');
       root.classList.add('panel-open');
       finalizeTimer = null;
-    }, 1600);
+    }, panelDelay + panelDuration);
   }
 
   function closePanel() {
@@ -99,6 +123,7 @@
 
     clearOpenTimers();
     clearCloseTimer();
+    updatePanelTiming();
 
     const isOpening = root.classList.contains('panel-opening');
     const isOpen = root.classList.contains('panel-open');
@@ -110,12 +135,11 @@
     root.classList.add('panel-closing');
     root.classList.remove('panel-open');
 
+    infoPanel.setAttribute('aria-hidden','true');
+    menuBtn.classList.remove('is-open');
+    menuBtn.setAttribute('aria-expanded','false');
+
     closeTimer = window.setTimeout(() => {
-      infoPanel.setAttribute('aria-hidden','true');
-
-      menuBtn.classList.remove('is-open');
-      menuBtn.setAttribute('aria-expanded','false');
-
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
 
@@ -123,7 +147,7 @@
 
       if (window.__unfreezeSafeAreas) window.__unfreezeSafeAreas();
       closeTimer = null;
-    }, 900);
+    }, panelDelay + panelDuration);
   }
 
   function togglePanel(){
@@ -148,12 +172,14 @@
   });
 
   window.addEventListener('resize', () => {
+    updatePanelTiming();
     if (infoPanel.getAttribute('aria-hidden') === 'false') {
       fitInfo();
     }
   });
   if (window.visualViewport){
     window.visualViewport.addEventListener('resize', () => {
+      updatePanelTiming();
       if (infoPanel.getAttribute('aria-hidden') === 'false') {
         fitInfo();
       }
