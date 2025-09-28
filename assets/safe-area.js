@@ -2,45 +2,66 @@
 (function () {
   const docEl = document.documentElement;
 
+  function readCssNumber(name){
+    const v = getComputedStyle(docEl).getPropertyValue(name).trim();
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? 0 : n;
+  }
+
   function updateSafeAreaVars() {
-    // Базовые env() — как дефолт
-    const envTop = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-top')) || 0;
-    const envRight = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-right')) || 0;
-    const envBottom = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-bottom')) || 0;
-    const envLeft = parseInt(getComputedStyle(docEl).getPropertyValue('--safe-left')) || 0;
-
-    let top = envTop, right = envRight, bottom = envBottom, left = envLeft;
-
-    // Доп. вычисления через visualViewport (когда доступно)
     const vv = window.visualViewport;
-    if (vv) {
-      // Верхний/нижний гэпы из-за браузерного chrome
-      const vhGap = window.innerHeight - Math.round(vv.height);
-      // Предположительно: верхний инсет = offsetTop
-      top = Math.max(top, Math.round(vv.offsetTop));
-      // Нижний — остаток
-      bottom = Math.max(bottom, Math.max(0, Math.round(vhGap - vv.offsetTop)));
+    let top = readCssNumber('--safe-top');
+    let right = readCssNumber('--safe-right');
+    let bottom = readCssNumber('--safe-bottom');
+    let left = readCssNumber('--safe-left');
 
-      // Горизонтальные инкрусты
-      left = Math.max(left, Math.round(vv.offsetLeft));
-      right = Math.max(right, Math.max(0, Math.round((window.innerWidth - Math.round(vv.width)) - vv.offsetLeft)));
+    let usableH = window.innerHeight;
+    if (vv){
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const w = Math.round(vv.width);
+      const h = Math.round(vv.height);
+      const offT = Math.round(vv.offsetTop);
+      const offL = Math.round(vv.offsetLeft);
+      const vGap = Math.max(0, H - h);
+
+      top = Math.max(top, offT);
+      left = Math.max(left, offL);
+      right = Math.max(right, Math.max(0, (W - w) - offL));
+      bottom = Math.max(bottom, Math.max(0, vGap - offT));
+
+      usableH = h;
     }
 
-    docEl.style.setProperty('--safe-top', `${top}px`);
-    docEl.style.setProperty('--safe-right', `${right}px`);
-    docEl.style.setProperty('--safe-bottom', `${bottom}px`);
-    docEl.style.setProperty('--safe-left', `${left}px`);
+    const panelOpen = docEl.classList.contains('panel-open') ||
+                      docEl.classList.contains('panel-opening') ||
+                      docEl.classList.contains('panel-closing');
+
+    if (!panelOpen){
+      docEl.style.setProperty('--safe-top-active', `${top}px`);
+      docEl.style.setProperty('--safe-right-active', `${right}px`);
+      docEl.style.setProperty('--safe-bottom-active', `${bottom}px`);
+      docEl.style.setProperty('--safe-left-active', `${left}px`);
+    }
+
+    docEl.style.setProperty('--vh-usable', `${usableH}px`);
   }
 
-  ['resize', 'scroll', 'orientationchange'].forEach(evt =>
-    window.addEventListener(evt, updateSafeAreaVars, { passive: true })
-  );
-  if (window.visualViewport) {
-    ['resize', 'scroll'].forEach(evt =>
-      window.visualViewport.addEventListener(evt, updateSafeAreaVars, { passive: true })
-    );
+  ['resize','scroll','orientationchange'].forEach((eventName) => {
+    window.addEventListener(eventName, updateSafeAreaVars, { passive: true });
+  });
+  if (window.visualViewport){
+    ['resize','scroll'].forEach((eventName) => {
+      window.visualViewport.addEventListener(eventName, updateSafeAreaVars, { passive: true });
+    });
   }
 
-  // Первичная инициализация
+  window.__freezeSafeAreas = function (){
+    // просто перестаём обновлять активные переменные до unfreeze
+  };
+  window.__unfreezeSafeAreas = function (){
+    updateSafeAreaVars();
+  };
+
   updateSafeAreaVars();
 })();
