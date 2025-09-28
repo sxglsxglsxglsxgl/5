@@ -1,18 +1,23 @@
 // assets/main.js
 (function () {
+  const root      = document.documentElement;
   const menuBtn   = document.getElementById('menuBtn');
   const infoPanel = document.getElementById('infoPanel');
-  const root = document.documentElement;
+  const infoFit   = infoPanel.querySelector('.info-fit');
+  const infoCont  = infoPanel.querySelector('.info-content');
 
-  function prepareLines() {
+  let showTimer = null;
+  let finalizeTimer = null;
+  let closeTimer = null;
+
+  function prepareLines(){
     const nodes = [];
-    const lead = infoPanel.querySelector('.lead');
+    const lead = infoCont.querySelector('.lead');
     if (lead) nodes.push(lead);
 
-    const roles = infoPanel.querySelectorAll('.roles span');
-    roles.forEach((node) => nodes.push(node));
+    infoCont.querySelectorAll('.roles span').forEach((node) => nodes.push(node));
 
-    const founders = infoPanel.querySelector('.founders');
+    const founders = infoCont.querySelector('.founders');
     if (founders) nodes.push(founders);
 
     nodes.forEach((el, index) => {
@@ -21,53 +26,143 @@
     });
   }
 
+  function fitInfo(){
+    const panelStyles = getComputedStyle(infoPanel);
+    const padTop = parseFloat(panelStyles.paddingTop) || 0;
+    const padBottom = parseFloat(panelStyles.paddingBottom) || 0;
+    const available = infoPanel.clientHeight - padTop - padBottom;
+
+    infoFit.style.setProperty('--panel-scale', '1');
+    infoFit.style.transform = 'scale(1)';
+    root.style.setProperty('--panel-scale', '1');
+
+    const needed = infoFit.scrollHeight;
+    let scale = 1;
+    if (needed > available && available > 0){
+      scale = Math.max(0.75, available / needed);
+    }
+
+    root.style.setProperty('--panel-scale', `${scale}`);
+    infoFit.style.transform = `scale(${scale})`;
+  }
+
+  function clearOpenTimers(){
+    if (showTimer){
+      clearTimeout(showTimer);
+      showTimer = null;
+    }
+    if (finalizeTimer){
+      clearTimeout(finalizeTimer);
+      finalizeTimer = null;
+    }
+  }
+
+  function clearCloseTimer(){
+    if (closeTimer){
+      clearTimeout(closeTimer);
+      closeTimer = null;
+    }
+  }
+
   function openPanel() {
+    if (!menuBtn || menuBtn.getAttribute('aria-expanded') === 'true') return;
+
+    clearCloseTimer();
+
     if (window.__freezeSafeAreas) window.__freezeSafeAreas();
 
-    root.classList.add('panel-open');
+    root.classList.remove('panel-closing');
+    root.classList.add('panel-opening');
     menuBtn.classList.add('is-open');
-    menuBtn.setAttribute('aria-expanded', 'true');
+    menuBtn.setAttribute('aria-expanded','true');
 
-    setTimeout(() => {
+    showTimer = window.setTimeout(() => {
       prepareLines();
-      infoPanel.setAttribute('aria-hidden', 'false');
+      infoPanel.setAttribute('aria-hidden','false');
+      requestAnimationFrame(() => {
+        fitInfo();
+      });
     }, 120);
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
+
+    finalizeTimer = window.setTimeout(() => {
+      root.classList.remove('panel-opening');
+      root.classList.add('panel-open');
+      finalizeTimer = null;
+    }, 1600);
   }
 
   function closePanel() {
-    infoPanel.setAttribute('aria-hidden', 'true');
+    if (!menuBtn) return;
+
+    clearOpenTimers();
+    clearCloseTimer();
+
+    const isOpening = root.classList.contains('panel-opening');
+    const isOpen = root.classList.contains('panel-open');
+    if (!isOpening && !isOpen && menuBtn.getAttribute('aria-expanded') !== 'true') {
+      return;
+    }
+
+    root.classList.remove('panel-opening');
+    root.classList.add('panel-closing');
     root.classList.remove('panel-open');
 
-    menuBtn.classList.remove('is-open');
-    menuBtn.setAttribute('aria-expanded', 'false');
+    closeTimer = window.setTimeout(() => {
+      infoPanel.setAttribute('aria-hidden','true');
 
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
+      menuBtn.classList.remove('is-open');
+      menuBtn.setAttribute('aria-expanded','false');
 
-    setTimeout(() => {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+
+      root.classList.remove('panel-closing');
+
       if (window.__unfreezeSafeAreas) window.__unfreezeSafeAreas();
-    }, 300);
+      closeTimer = null;
+    }, 900);
   }
 
-  function togglePanel() {
-    menuBtn.getAttribute('aria-expanded') === 'true' ? closePanel() : openPanel();
+  function togglePanel(){
+    if (!menuBtn) return;
+    const expanded = menuBtn.getAttribute('aria-expanded') === 'true';
+    expanded ? closePanel() : openPanel();
   }
 
-  menuBtn.addEventListener('click', togglePanel);
+  if (menuBtn){
+    menuBtn.addEventListener('click', togglePanel);
+  }
 
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') closePanel();
   });
 
   infoPanel.addEventListener('click', (event) => {
-    const content = event.currentTarget.querySelector('.info-content');
+    const content = infoCont;
     if (event.target === event.currentTarget || !content.contains(event.target)) {
       closePanel();
     }
   });
 
-  infoPanel.setAttribute('aria-hidden', 'true');
+  window.addEventListener('resize', () => {
+    if (infoPanel.getAttribute('aria-hidden') === 'false') {
+      fitInfo();
+    }
+  });
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', () => {
+      if (infoPanel.getAttribute('aria-hidden') === 'false') {
+        fitInfo();
+      }
+    }, { passive: true });
+  }
+
+  infoPanel.setAttribute('aria-hidden','true');
+  if (menuBtn){
+    menuBtn.setAttribute('aria-expanded','false');
+  }
+  root.classList.remove('panel-open','panel-opening','panel-closing');
 })();

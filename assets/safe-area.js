@@ -2,65 +2,64 @@
 (function () {
   const docEl = document.documentElement;
 
-  function readNumberVar(name) {
-    const value = getComputedStyle(docEl).getPropertyValue(name).trim();
-    const parsed = parseFloat(value);
-    return Number.isNaN(parsed) ? 0 : parsed;
+  function readCssNumber(name){
+    const v = getComputedStyle(docEl).getPropertyValue(name).trim();
+    const n = parseFloat(v);
+    return Number.isNaN(n) ? 0 : n;
   }
 
   function updateSafeAreaVars() {
     const vv = window.visualViewport;
-    let top = readNumberVar('--safe-top');
-    let right = readNumberVar('--safe-right');
-    let bottom = readNumberVar('--safe-bottom');
-    let left = readNumberVar('--safe-left');
+    let top = readCssNumber('--safe-top');
+    let right = readCssNumber('--safe-right');
+    let bottom = readCssNumber('--safe-bottom');
+    let left = readCssNumber('--safe-left');
 
-    if (vv) {
-      const viewportWidth = Math.round(vv.width);
-      const windowWidth = window.innerWidth;
-      const viewportHeight = Math.round(vv.height);
-      const windowHeight = window.innerHeight;
-      const offsetTop = Math.round(vv.offsetTop);
-      const offsetLeft = Math.round(vv.offsetLeft);
-      const verticalGap = Math.max(0, windowHeight - viewportHeight);
+    let usableH = window.innerHeight;
+    if (vv){
+      const W = window.innerWidth;
+      const H = window.innerHeight;
+      const w = Math.round(vv.width);
+      const h = Math.round(vv.height);
+      const offT = Math.round(vv.offsetTop);
+      const offL = Math.round(vv.offsetLeft);
+      const vGap = Math.max(0, H - h);
 
-      top = Math.max(top, offsetTop);
-      left = Math.max(left, offsetLeft);
-      right = Math.max(right, Math.max(0, (windowWidth - viewportWidth) - offsetLeft));
-      bottom = Math.max(bottom, Math.max(0, verticalGap - offsetTop));
+      top = Math.max(top, offT);
+      left = Math.max(left, offL);
+      right = Math.max(right, Math.max(0, (W - w) - offL));
+      bottom = Math.max(bottom, Math.max(0, vGap - offT));
+
+      usableH = h;
     }
 
-    if (!docEl.classList.contains('panel-open')) {
+    const panelOpen = docEl.classList.contains('panel-open') ||
+                      docEl.classList.contains('panel-opening') ||
+                      docEl.classList.contains('panel-closing');
+
+    if (!panelOpen){
       docEl.style.setProperty('--safe-top-active', `${top}px`);
       docEl.style.setProperty('--safe-right-active', `${right}px`);
       docEl.style.setProperty('--safe-bottom-active', `${bottom}px`);
       docEl.style.setProperty('--safe-left-active', `${left}px`);
     }
+
+    docEl.style.setProperty('--vh-usable', `${usableH}px`);
   }
 
-  ['resize', 'scroll', 'orientationchange'].forEach((eventName) => {
+  ['resize','scroll','orientationchange'].forEach((eventName) => {
     window.addEventListener(eventName, updateSafeAreaVars, { passive: true });
   });
-
-  if (window.visualViewport) {
-    ['resize', 'scroll'].forEach((eventName) => {
+  if (window.visualViewport){
+    ['resize','scroll'].forEach((eventName) => {
       window.visualViewport.addEventListener(eventName, updateSafeAreaVars, { passive: true });
     });
   }
 
-  window.__freezeSafeAreas = function freeze() {
-    const top = readNumberVar('--safe-top-active');
-    const right = readNumberVar('--safe-right-active');
-    const bottom = readNumberVar('--safe-bottom-active');
-    const left = readNumberVar('--safe-left-active');
-
-    docEl.style.setProperty('--safe-top-active', `${top}px`);
-    docEl.style.setProperty('--safe-right-active', `${right}px`);
-    docEl.style.setProperty('--safe-bottom-active', `${bottom}px`);
-    docEl.style.setProperty('--safe-left-active', `${left}px`);
+  window.__freezeSafeAreas = function (){
+    // просто перестаём обновлять активные переменные до unfreeze
   };
-
-  window.__unfreezeSafeAreas = function unfreeze() {
+  window.__unfreezeSafeAreas = function (){
     updateSafeAreaVars();
   };
 
