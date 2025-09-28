@@ -123,6 +123,14 @@ body{
   --panel-delay-active: 0s;
 }
 
+/* Отключаем клики, пока идёт анимация открытия/закрытия */
+.panel-opening .menu-btn,
+.panel-closing .menu-btn,
+.panel-opening .info-panel,
+.panel-closing .info-panel {
+  pointer-events: none;
+}
+
 .info-panel{
   position:fixed; inset:0;
   background:var(--bg); color:var(--fg);
@@ -135,23 +143,22 @@ body{
   height: 100lvh;
   overflow:auto;
 
-  opacity:0; transform: translateY(8%);
+  opacity:0;
+  transform: translateY(8%);
   visibility:hidden;
   transition:
     opacity var(--panel-duration) cubic-bezier(.16,1,.3,1) var(--panel-delay-active),
     transform var(--panel-duration) cubic-bezier(.16,1,.3,1) var(--panel-delay-active);
 }
-.info-panel[aria-hidden="true"]{
-  transition-duration: 0s;
-  transition-delay: 0s;
-}
-.info-panel[aria-hidden="false"]{
+.panel-opening .info-panel,
+.panel-open .info-panel{
   opacity:1;
-  transform: translateY(0);
   visibility:visible;
+  transform: translateY(0);
 }
-.panel-closing .info-panel[aria-hidden="false"]{
-  pointer-events:none;
+.panel-closing .info-panel{
+  opacity:0;
+  transform: translateY(8%);
 }
 
 .info-fit{
@@ -219,12 +226,7 @@ body{
   background:var(--bg);
   pointer-events:none;
   will-change:height;
-  transition: height 900ms cubic-bezier(.16,1,.3,1);
   z-index:5;
-}
-
-.panel-closing .panel-wipe{
-  height:100%;
 }
 
 @media (max-width:380px){
