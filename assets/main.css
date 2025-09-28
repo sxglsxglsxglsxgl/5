@@ -40,15 +40,25 @@ body {
   position: relative;
 }
 
-/* Центрированный слово-знак (без анимаций) */
+/* СЛОВО-ЗНАК: состояние по умолчанию — видно */
 .wordmark {
   margin: 0;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-align: center;
   line-height: var(--lh);
-  /* Оптическая шкала размера под вьюпорт */
   font-size: clamp(28px, 11vw, 96px);
+  transition: opacity .6s cubic-bezier(.2,.8,.2,1),
+              transform .6s cubic-bezier(.2,.8,.2,1),
+              filter .6s cubic-bezier(.2,.8,.2,1);
+  will-change: opacity, transform, filter;
+}
+
+/* Когда панель открыта — «уходим в глубину» */
+.panel-open .wordmark {
+  opacity: 0.15;
+  transform: translateY(6px) scale(0.985);
+  filter: blur(0.2px);
 }
 
 /* Кнопка "i" — правый верх, внутри safe-area */
@@ -71,29 +81,30 @@ body {
 .info-btn:hover { opacity: 1; transform: scale(1.03); }
 .info-btn:focus-visible { outline: 2px solid var(--fg-weak); outline-offset: 3px; }
 
-/* ПОЛНОЭКРАННАЯ СВЕТЛАЯ ПАНЕЛЬ */
+/* ИНФО-ПАНЕЛЬ: полноэкранный оверлей, тот же цвет, что и фон */
 .info-panel {
   position: fixed;
   inset: 0;
-  background: #FAFAFA;
-  color: #111;
+  background: var(--bg);
+  color: var(--fg);
   display: grid;
   place-items: center;
-  /* плавное появление */
-  opacity: 0;
-  transform: translateY(2%);
-  visibility: hidden;
-  transition:
-    opacity .35s cubic-bezier(.2,.8,.2,1),
-    transform .35s cubic-bezier(.2,.8,.2,1),
-    visibility 0s linear .35s; /* скрыть клики, когда невидима */
-  /* учёт safe-areas через внутренние паддинги контейнера */
   padding:
     calc(max(var(--padY), 24px) + var(--safe-top))
     calc(max(var(--padX), 24px) + var(--safe-right))
     calc(max(var(--padY), 24px) + var(--safe-bottom))
     calc(max(var(--padX), 24px) + var(--safe-left));
   overflow: auto;
+
+  /* старт: слегка ниже и прозрачная */
+  opacity: 0;
+  transform: translateY(6%);
+  visibility: hidden;
+  transition:
+    opacity .65s cubic-bezier(.2,.8,.2,1),
+    transform .65s cubic-bezier(.2,.8,.2,1),
+    visibility 0s linear .65s;
+  will-change: opacity, transform;
 }
 
 .info-panel[aria-hidden="false"] {
@@ -103,7 +114,6 @@ body {
   transition-delay: 0s;
 }
 
-/* Контент по центру, узкая колонка */
 .info-content {
   width: min(640px, 100%);
   margin: 0 auto;
@@ -112,36 +122,34 @@ body {
   line-height: 1.25;
 }
 
-/* Заголовок (первый абзац) — крупный serif */
 .info-content .lead {
-  font-size: clamp(24px, 4.6vw, 42px);
+  font-size: clamp(20px, 4.2vw, 38px);
   font-weight: 500;
   letter-spacing: 0.005em;
-  margin: 0 0 28px 0;
+  margin: 0 0 24px 0;
+  color: var(--fg);
 }
 
-/* Список ролей — одна колонка, по центру, равномерный ритм */
 .info-content .roles {
   display: grid;
   justify-items: center;
-  gap: 10px;
-  margin: 0 0 32px 0;
-  font-size: clamp(18px, 3.2vw, 30px);
-  line-height: 1.25;
-  color: #111;
+  gap: 8px;
+  margin: 0 0 28px 0;
+  font-size: clamp(16px, 3vw, 26px);
+  color: var(--fg);
 }
 
-/* Фаундеры — с лёгким курсивом для имени */
 .info-content .founders {
-  font-size: clamp(18px, 2.6vw, 26px);
+  font-size: clamp(16px, 2.4vw, 22px);
   margin: 10px 0 0 0;
+  color: var(--fg);
 }
 .info-content .founders em,
 .info-content .founders i {
   font-style: italic;
 }
 
-/* КНОПКА ЗАКРЫТИЯ (× в кружке) — правый верх, внутри safe-area */
+/* Кнопка закрытия («×») — в правом верхнем углу, белая рамка */
 .info-close {
   position: fixed;
   top: calc(16px + var(--safe-top));
@@ -151,8 +159,8 @@ body {
   line-height: 36px;
   border-radius: 999px;
   background: transparent;
-  color: #111;
-  border: 2px solid #111;
+  color: var(--fg);
+  border: 2px solid var(--fg);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -160,10 +168,10 @@ body {
   padding: 0;
 }
 .info-close:hover { opacity: .85; }
-.info-close:focus-visible { outline: 2px solid #666; outline-offset: 3px; }
+.info-close:focus-visible { outline: 2px solid var(--fg-weak); outline-offset: 3px; }
 
 /* Уважение к reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  .wordmark,
   .info-panel { transition: none; }
-  .info-btn { transition: none; }
 }
