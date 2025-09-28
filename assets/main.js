@@ -6,11 +6,14 @@
   const infoFit   = infoPanel.querySelector('.info-fit');
   const infoCont  = infoPanel.querySelector('.info-content');
 
-  let showTimer = null;
   let finalizeTimer = null;
   let closeTimer = null;
   let panelDelay = 120;
   let panelDuration = 1600;
+  let lineOpenOffset = 160;
+  let lineCloseOffset = 0;
+  let lineStagger = 95;
+  let lineCloseDuration = 1100;
 
   function parseTimeValue(value){
     if (!value) return 0;
@@ -24,11 +27,36 @@
 
   function updatePanelTiming(){
     const styles = getComputedStyle(root);
-    const delayValue = parseTimeValue(styles.getPropertyValue('--panel-delay'));
-    const durationValue = parseTimeValue(styles.getPropertyValue('--panel-duration'));
 
-    panelDelay = delayValue || panelDelay;
-    panelDuration = durationValue || panelDuration;
+    const delayRaw = styles.getPropertyValue('--panel-delay');
+    if (delayRaw && delayRaw.trim()){
+      panelDelay = parseTimeValue(delayRaw);
+    }
+
+    const durationRaw = styles.getPropertyValue('--panel-duration');
+    if (durationRaw && durationRaw.trim()){
+      panelDuration = parseTimeValue(durationRaw);
+    }
+
+    const openOffsetRaw = styles.getPropertyValue('--line-open-offset');
+    if (openOffsetRaw && openOffsetRaw.trim()){
+      lineOpenOffset = parseTimeValue(openOffsetRaw);
+    }
+
+    const closeOffsetRaw = styles.getPropertyValue('--line-close-offset');
+    if (closeOffsetRaw && closeOffsetRaw.trim()){
+      lineCloseOffset = parseTimeValue(closeOffsetRaw);
+    }
+
+    const staggerRaw = styles.getPropertyValue('--line-stagger');
+    if (staggerRaw && staggerRaw.trim()){
+      lineStagger = parseTimeValue(staggerRaw);
+    }
+
+    const closeDurationRaw = styles.getPropertyValue('--line-close-duration');
+    if (closeDurationRaw && closeDurationRaw.trim()){
+      lineCloseDuration = parseTimeValue(closeDurationRaw);
+    }
   }
 
   updatePanelTiming();
@@ -51,15 +79,28 @@
     return lineCache;
   }
 
+  function formatMs(value){
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return '0ms';
+    const rounded = Math.round(numeric * 1000) / 1000;
+    return `${rounded}ms`;
+  }
+
   function prepareLines(){
     const nodes = getLineNodes();
+    if (!nodes.length) return;
 
+    const count = nodes.length;
     nodes.forEach((el, index) => {
       if (!el.classList.contains('line')){
         el.classList.add('line');
       }
-      el.style.setProperty('--delay-open', `${160 + index * 95}ms`);
-      el.style.setProperty('--delay-close', `${index * 95}ms`);
+
+      const openDelay = lineOpenOffset + index * lineStagger;
+      const closeDelay = lineCloseOffset + (count - index - 1) * lineStagger;
+
+      el.style.setProperty('--delay-open', formatMs(openDelay));
+      el.style.setProperty('--delay-close', formatMs(closeDelay));
     });
   }
 
@@ -88,7 +129,7 @@
     const needed = infoFit.scrollHeight;
     let scale = 1;
     if (needed > available && available > 0){
-      scale = Math.max(0.5, available / needed);
+      scale = Math.max(0.4, available / needed);
     }
 
     root.style.setProperty('--panel-scale', `${scale}`);
@@ -96,10 +137,6 @@
   }
 
   function clearOpenTimers(){
-    if (showTimer){
-      clearTimeout(showTimer);
-      showTimer = null;
-    }
     if (finalizeTimer){
       clearTimeout(finalizeTimer);
       finalizeTimer = null;
@@ -118,6 +155,7 @@
 
     clearCloseTimer();
     updatePanelTiming();
+    prepareLines();
 
     if (window.__freezeSafeAreas) window.__freezeSafeAreas();
 
@@ -126,15 +164,12 @@
     menuBtn.classList.add('is-open');
     menuBtn.setAttribute('aria-expanded','true');
 
-    showTimer = window.setTimeout(() => {
-      prepareLines();
-      scrubLineAnimations();
-      infoPanel.classList.add('is-active');
-      infoPanel.setAttribute('aria-hidden','false');
-      requestAnimationFrame(() => {
-        fitInfo();
-      });
-    }, panelDelay);
+    scrubLineAnimations();
+    infoPanel.classList.add('is-active');
+    infoPanel.setAttribute('aria-hidden','false');
+    requestAnimationFrame(() => {
+      fitInfo();
+    });
 
     document.documentElement.style.overflow = 'hidden';
     document.body.style.overflow = 'hidden';
@@ -152,6 +187,7 @@
     clearOpenTimers();
     clearCloseTimer();
     updatePanelTiming();
+    prepareLines();
 
     const isOpening = root.classList.contains('panel-opening');
     const isOpen = root.classList.contains('panel-open');
@@ -167,17 +203,17 @@
     if (!infoPanel.classList.contains('is-active')) {
       infoPanel.classList.add('is-active');
     }
+    infoPanel.setAttribute('aria-hidden','false');
     menuBtn.classList.remove('is-open');
     menuBtn.setAttribute('aria-expanded','false');
 
-    const lineNodes = Array.from(infoCont.querySelectorAll('.line'));
+    const lineNodes = getLineNodes();
     const longestDelay = lineNodes.reduce((max, el) => {
       const value = el.style.getPropertyValue('--delay-close');
       const delay = parseTimeValue(value);
       return Math.max(max, delay);
     }, 0);
-    const lineFallDuration = 900;
-    const totalLineTime = longestDelay + lineFallDuration;
+    const totalLineTime = longestDelay + lineCloseDuration;
     const settleTime = Math.max(panelDuration, totalLineTime);
 
     closeTimer = window.setTimeout(() => {
@@ -217,6 +253,7 @@
 
   window.addEventListener('resize', () => {
     updatePanelTiming();
+    prepareLines();
     if (infoPanel.getAttribute('aria-hidden') === 'false') {
       fitInfo();
     }
@@ -224,11 +261,14 @@
   if (window.visualViewport){
     window.visualViewport.addEventListener('resize', () => {
       updatePanelTiming();
+      prepareLines();
       if (infoPanel.getAttribute('aria-hidden') === 'false') {
         fitInfo();
       }
     }, { passive: true });
   }
+
+  prepareLines();
 
   infoPanel.classList.remove('is-active');
   infoPanel.setAttribute('aria-hidden','true');
