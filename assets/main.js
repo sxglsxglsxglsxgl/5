@@ -17,6 +17,14 @@
   let lineAnimations = []; // активные анимации строк
   let wipeAnimation = null;
 
+  function settleAnimation(anim) {
+    if (!anim) return;
+    try {
+      if (typeof anim.commitStyles === 'function') anim.commitStyles();
+    } catch (e) {}
+    try { anim.cancel(); } catch (e) {}
+  }
+
   function collectLines() {
     const lines = [];
     const lead = infoCont.querySelector('.lead'); if (lead) lines.push(lead);
@@ -41,19 +49,23 @@
   }
 
   function stopAllAnimations() {
-    lineAnimations.forEach(a => { try { a.cancel(); } catch(e){} });
+    lineAnimations.forEach(settleAnimation);
     lineAnimations = [];
-    if (wipeAnimation) { try { wipeAnimation.cancel(); } catch(e){} wipeAnimation = null; }
+    if (wipeAnimation) {
+      settleAnimation(wipeAnimation);
+      wipeAnimation = null;
+    }
   }
 
-  async function animateOpenLines() {
+  function animateOpenLines() {
     stopAllAnimations();
     const lines = collectLines();
     // форс-рефлоу, чтобы последующие анимации всегда стартовали
     infoCont.offsetHeight;
 
-    lines.forEach((el, i) => {
+    const animations = lines.map((el, i) => {
       el.style.opacity = '0';
+      el.style.transform = 'translateY(14px)';
       const anim = el.animate(
         [
           { opacity: 0, transform: 'translateY(14px)' },
@@ -66,15 +78,18 @@
           fill: 'forwards'
         }
       );
-      lineAnimations.push(anim);
+      return anim;
     });
 
-    // ждём последнюю
-    const lastDelay = OPEN_BASE + (lines.length - 1) * OPEN_STEP;
-    await new Promise(res => setTimeout(res, lastDelay + OPEN_DUR));
+    lineAnimations = animations;
+
+    const finished = Promise.all(animations.map(anim => anim.finished.catch(() => {})));
+
+    const lastDelay = lines.length ? OPEN_BASE + (lines.length - 1) * OPEN_STEP : 0;
+    return { finished, totalDuration: lastDelay + OPEN_DUR };
   }
 
-  async function animateCloseLines() {
+  function animateCloseLines() {
     stopAllAnimations();
     const lines = collectLines();
     // рефлоу
@@ -82,8 +97,9 @@
 
     // обратный порядок
     const n = lines.length;
-    lines.forEach((el, i) => {
+    const animations = lines.map((el, i) => {
       el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
       const rev = n - 1 - i;
       const anim = el.animate(
         [
@@ -97,32 +113,39 @@
           fill: 'forwards'
         }
       );
-      lineAnimations.push(anim);
+      return anim;
     });
 
-    const lastDelay = CLOSE_BASE + (n - 1) * CLOSE_STEP;
-    await new Promise(res => setTimeout(res, lastDelay + CLOSE_DUR));
+    lineAnimations = animations;
+
+    const finished = Promise.all(animations.map(anim => anim.finished.catch(() => {})));
+
+    const lastDelay = n ? CLOSE_BASE + (n - 1) * CLOSE_STEP : 0;
+    return { finished, totalDuration: lastDelay + CLOSE_DUR };
   }
 
-  function animateWipeUp() {
+  function animateWipeUp(totalDuration) {
     if (!wipe) return Promise.resolve();
     if (wipeAnimation) { try { wipeAnimation.cancel(); } catch(e){} }
 
-    wipe.style.height = '0px';
+    wipe.style.height = '0%';
     // форс-рефлоу
     wipe.offsetHeight;
 
     wipeAnimation = wipe.animate(
-      [{ height: '0px' }, { height: '100%' }],
-      { duration: CLOSE_DUR, easing, fill: 'forwards' }
+      [{ height: '0%' }, { height: '100%' }],
+      { duration: totalDuration || CLOSE_DUR, easing, fill: 'forwards' }
     );
-    return wipeAnimation.finished.catch(() => {});
+    return wipeAnimation.finished.catch(() => {}).finally(() => {
+      wipeAnimation = null;
+    });
   }
 
   function resetWipe() {
     if (!wipe) return;
     if (wipeAnimation) { try { wipeAnimation.cancel(); } catch(e){} }
-    wipe.style.height = '0px';
+    wipeAnimation = null;
+    wipe.style.height = '0%';
   }
 
   async function openPanel() {
@@ -141,7 +164,8 @@
       requestAnimationFrame(fitInfo);
     }, 120);
 
-    await animateOpenLines();
+    const { finished: openLines } = animateOpenLines();
+    await openLines;
 
     // фиксация состояния
     root.classList.remove('panel-opening');
@@ -160,7 +184,8 @@
     root.classList.add('panel-closing');
 
     // параллельно: строки вверх + шторка снизу
-    await Promise.all([ animateCloseLines(), animateWipeUp() ]);
+    const { finished: closeLines, totalDuration } = animateCloseLines();
+    await Promise.all([ closeLines, animateWipeUp(totalDuration) ]);
 
     root.classList.remove('panel-open');
 
@@ -175,6 +200,11 @@
 
     root.classList.remove('panel-closing');
     resetWipe();
+
+    collectLines().forEach(el => {
+      el.style.opacity = '';
+      el.style.transform = '';
+    });
 
     if (window.__unfreezeSafeAreas) window.__unfreezeSafeAreas();
 
