@@ -158,10 +158,11 @@
     state = 'closing';
 
     root.classList.add('panel-closing');
-    root.classList.remove('panel-open');
 
     // параллельно: строки вверх + шторка снизу
     await Promise.all([ animateCloseLines(), animateWipeUp() ]);
+
+    root.classList.remove('panel-open');
 
     // скрываем панель только ПОСЛЕ анимаций
     infoPanel.setAttribute('aria-hidden','true');
